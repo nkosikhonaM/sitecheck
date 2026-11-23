@@ -1,6 +1,9 @@
 """FastAPI application factory."""
 
-from fastapi import FastAPI
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -11,7 +14,12 @@ from app.schemas import HealthResponse
 def create_app() -> FastAPI:
     """Create and configure the SiteCheck application."""
 
-    app = FastAPI(title="SiteCheck", version="0.1.0")
+    @asynccontextmanager
+    async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+        Base.metadata.create_all(bind=engine)
+        yield
+
+    app = FastAPI(title="SiteCheck", version="0.1.0", lifespan=lifespan)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[],
@@ -21,16 +29,12 @@ def create_app() -> FastAPI:
     )
 
     @app.middleware("http")
-    async def security_headers(request, call_next):
+    async def security_headers(request: Request, call_next) -> Response:
         response = await call_next(request)
         response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Frame-Options"] = "DENY"
         return response
-
-    @app.on_event("startup")
-    async def startup() -> None:
-        Base.metadata.create_all(bind=engine)
 
     @app.get("/healthz", response_model=HealthResponse)
     async def healthz() -> JSONResponse:

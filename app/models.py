@@ -1,7 +1,6 @@
 """Database models for SiteCheck."""
 
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import Boolean, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -18,13 +17,15 @@ class Site(Base):
     url: Mapped[str] = mapped_column(Text, nullable=False)
     hostname: Mapped[str] = mapped_column(String(255), nullable=False)
     verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    verify_token: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
-    verify_method: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
+    verify_token: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    verify_method: Mapped[str | None] = mapped_column(String(16), nullable=True)
     check_interval_s: Mapped[int] = mapped_column(Integer, default=300, nullable=False)
     scan_interval_h: Mapped[int] = mapped_column(Integer, default=24, nullable=False)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, nullable=False)
 
-    checks: Mapped[list["Check"]] = relationship(back_populates="site", cascade="all, delete-orphan")
+    checks: Mapped[list["Check"]] = relationship(
+        back_populates="site", cascade="all, delete-orphan"
+    )
     scans: Mapped[list["Scan"]] = relationship(back_populates="site", cascade="all, delete-orphan")
     incidents: Mapped[list["Incident"]] = relationship(
         back_populates="site", cascade="all, delete-orphan"
@@ -43,11 +44,11 @@ class Check(Base):
     site_id: Mapped[int] = mapped_column(ForeignKey("sites.id"), nullable=False, index=True)
     ts: Mapped[datetime] = mapped_column(default=datetime.utcnow, nullable=False)
     ok: Mapped[bool] = mapped_column(Boolean, nullable=False)
-    status_code: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    dns_ms: Mapped[Optional[float]] = mapped_column(nullable=True)
-    ttfb_ms: Mapped[Optional[float]] = mapped_column(nullable=True)
-    total_ms: Mapped[Optional[float]] = mapped_column(nullable=True)
-    error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    status_code: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    dns_ms: Mapped[float | None] = mapped_column(nullable=True)
+    ttfb_ms: Mapped[float | None] = mapped_column(nullable=True)
+    total_ms: Mapped[float | None] = mapped_column(nullable=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     site: Mapped["Site"] = relationship(back_populates="checks")
 
@@ -62,7 +63,7 @@ class Scan(Base):
     ts: Mapped[datetime] = mapped_column(default=datetime.utcnow, nullable=False)
     score: Mapped[int] = mapped_column(Integer, nullable=False)
     grade: Mapped[str] = mapped_column(String(1), nullable=False)
-    summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    summary: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     site: Mapped["Site"] = relationship(back_populates="scans")
     findings: Mapped[list["Finding"]] = relationship(
@@ -95,7 +96,7 @@ class Incident(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     site_id: Mapped[int] = mapped_column(ForeignKey("sites.id"), nullable=False, index=True)
     started_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, nullable=False)
-    resolved_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(nullable=True)
     reason: Mapped[str] = mapped_column(Text, nullable=False)
 
     site: Mapped["Site"] = relationship(back_populates="incidents")
